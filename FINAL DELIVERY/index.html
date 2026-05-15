@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4 — NoSQL Databases</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7ff;
+    --bg2: #f0effe;
+    --bg3: #eeedf8;
+    --surface: #ffffff;
+    --border: rgba(100,90,200,0.12);
+    --border2: rgba(100,90,200,0.22);
+    --text: #1a1830;
+    --muted: #6b6890;
+    --accent: #5046d4;
+    --accent2: #e03e3e;
+    --accent3: #0f9e6e;
+    --accent4: #c07a00;
+    --redis: #d63a3a;
+    --mongo: #0f9e6e;
+    --cassandra: #1a7fd4;
+    --neo4j: #b86a00;
+    --perf: #8b35c8;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ─────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 30%, rgba(80,70,212,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 70%, rgba(15,158,110,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 60% 20%, rgba(214,58,58,0.07) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(108,99,255,0.15);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #5046d4;
+    letter-spacing: 0.04em;
+    margin-bottom: 2rem;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #6c63ff;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, #5046d4 0%, #0f9e6e 50%, #b86a00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto 3rem;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .hero-stat .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: white;
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(80,70,212,0.28);
+  }
+  .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(80,70,212,0.35); }
+
+  /* ── SCROLL INDICATOR ─────────────────────────────────── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    animation: fadeInDown 1s ease 1s both;
+  }
+
+  .scroll-hint .bar {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--muted), transparent);
+    animation: grow 1.5s ease infinite;
+  }
+
+  @keyframes grow { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
+  @keyframes fadeInDown { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* ── NAV ──────────────────────────────────────────────── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(248,247,255,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+
+  .nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    gap: 2rem;
+  }
+
+  .nav-logo {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-logo .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0;
+    list-style: none;
+    margin-left: auto;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .nav-links a:hover { color: var(--text); background: rgba(80,70,212,0.07); }
+
+  /* ── SECTIONS ─────────────────────────────────────────── */
+  section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 6rem 2rem;
+  }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin-bottom: 3rem;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  /* ── TP CARDS ─────────────────────────────────────────── */
+  .tp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .tp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    cursor: pointer;
+  }
+
+  .tp-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-color, var(--accent));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .tp-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border2);
+    box-shadow: 0 20px 60px rgba(80,70,212,0.12);
+  }
+
+  .tp-card[data-tp="1"] { --card-color: var(--redis); }
+  .tp-card[data-tp="2"] { --card-color: var(--mongo); }
+  .tp-card[data-tp="3"] { --card-color: var(--cassandra); }
+  .tp-card[data-tp="4"] { --card-color: var(--neo4j); }
+  .tp-card[data-tp="5"] { --card-color: var(--perf); }
+
+  .tp-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .tp-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    background: rgba(80,70,212,0.07);
+    border: 1px solid var(--border);
+  }
+
+  .tp-meta { flex: 1; }
+
+  .tp-number {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--card-color);
+    margin-bottom: 4px;
+  }
+
+  .tp-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .tp-tech {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(80,70,212,0.07);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-family: var(--mono);
+  }
+
+  .tp-usecase {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .tp-objectives {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+  }
+
+  .tp-objectives li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  .tp-objectives li::before {
+    content: '→';
+    color: var(--card-color);
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .tp-pts {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--card-color);
+  }
+
+  .tp-dur {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── THEORY SECTIONS ──────────────────────────────────── */
+  .theory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+
+  .theory-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .theory-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .theory-card p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── CODE BLOCK ───────────────────────────────────────── */
+  .code-block {
+    background: #1e1b3a;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+
+  .code-header {
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot.r { background: #ff5f57; }
+  .code-dot.y { background: #febc2e; }
+  .code-dot.g { background: #28c840; }
+
+  .code-label {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .code-block pre {
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: #cdd6f4;
+  }
+
+  .kw { color: #cba6f7; }
+  .fn { color: #89b4fa; }
+  .str { color: #a6e3a1; }
+  .cm { color: #6c7086; font-style: italic; }
+  .num { color: #fab387; }
+  .var { color: #f38ba8; }
+
+  /* ── TIMELINE ─────────────────────────────────────────── */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), var(--neo4j));
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: -1.6rem;
+    top: 6px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--item-color, var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timeline-dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--item-color, var(--accent));
+  }
+
+  .timeline-item h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--item-color, var(--text));
+  }
+
+  .timeline-item p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── COMPARISON TABLE ─────────────────────────────────── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    margin-top: 2rem;
+  }
+
+  .comp-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comp-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  .comp-table tr:hover td { background: rgba(80,70,212,0.03); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-redis { background: rgba(214,58,58,0.12); color: #b02020; }
+  .badge-mongo { background: rgba(15,158,110,0.12); color: #0a7a55; }
+  .badge-cass  { background: rgba(26,127,212,0.12); color: #1060a8; }
+  .badge-neo4j { background: rgba(184,106,0,0.12); color: #8a5000; }
+
+  /* ── ACCORDION ────────────────────────────────────────── */
+  .accordion { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+
+  .accordion-item { border-bottom: 1px solid var(--border); }
+  .accordion-item:last-child { border-bottom: none; }
+
+  .accordion-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .accordion-trigger:hover { background: rgba(80,70,212,0.04); }
+
+  .accordion-trigger .chevron {
+    margin-left: auto;
+    color: var(--muted);
+    transition: transform 0.3s;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .accordion-trigger.open .chevron { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    padding: 1.25rem;
+    background: var(--bg3);
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .accordion-body.open { display: block; }
+
+  .accordion-body ul {
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+  .accordion-body ul li { margin-bottom: 6px; }
+
+  /* ── SETUP STEPS ──────────────────────────────────────── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    counter-reset: steps;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(80,70,212,0.10);
+    border: 1px solid rgba(80,70,212,0.20);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .step-content h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .step-content p { font-size: 0.875rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── FOOTER ───────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .footer-inner p { font-size: 0.85rem; color: var(--muted); }
+  .footer-inner strong { color: var(--text); font-weight: 500; }
+
+  /* ── DIVIDER ──────────────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border2), transparent);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── RESPONSIVE ───────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .hero-stats { gap: 2rem; }
+    .nav-links { display: none; }
+    section { padding: 4rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">Chapter 4 · GitHub Classroom</div>
+
+  <h1>NoSQL<br><span>Databases</span></h1>
+
+  <p class="hero-sub">
+    5 hands-on lab assignments built around real Algerian use cases —
+    Redis, MongoDB, Cassandra, Neo4j and a comparative performance benchmark.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="num">5</div>
+      <div class="label">Lab Assignments</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">100</div>
+      <div class="label">Total Points</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">4</div>
+      <div class="label">Technologies</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">13h</div>
+      <div class="label">Estimated Time</div>
+    </div>
+  </div>
+
+  <a href="#tps" class="hero-cta">Explore the Labs ↓</a>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="bar"></div>
+  </div>
+</div>
+
+<!-- ── NAV ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">
+      <span class="dot"></span>
+      NoSQL · Ch4
+    </a>
+    <ul class="nav-links">
+      <li><a href="#tps">Labs</a></li>
+      <li><a href="#theorie">Theory</a></li>
+      <li><a href="#comparaison">Comparison</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#demarrage">Getting Started</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── LAB SECTION ───────────────────────────────────────── -->
+<section id="tps">
+  <div class="section-label">Lab Assignments</div>
+  <h2 class="section-title">5 Labs on Real-World Use Cases</h2>
+  <p class="section-desc">
+    Each lab is grounded in a concrete Algerian business context.
+    You are not implementing abstract examples — you are building real architectures.
+  </p>
+
+  <div class="tp-grid">
+
+    <!-- TP1 Redis -->
+    <div class="tp-card" data-tp="1">
+      <div class="tp-header">
+        <div class="tp-icon">⚡</div>
+        <div class="tp-meta">
+          <div class="tp-number">Lab 1 · Redis</div>
+          <div class="tp-title">E-Commerce Caching System</div>
+        </div>
+      </div>
+      <div class="tp-tech">redis:7-alpine</div>
+      <p class="tp-usecase">🛒 ShopFast DZ — Speed up an Algerian e-commerce platform where product pages take 3–4 seconds to load.</p>
+      <ul class="tp-objectives">
+        <li>Hash, List, Set, Sorted Set for products &amp; carts</li>
+        <li>Cache-Aside pattern with configurable TTL</li>
+        <li>User sessions with sliding expiration</li>
+        <li>Real-time best-seller leaderboard</li>
+        <li>Pipelines &amp; MULTI/EXEC transactions</li>
+      </ul>
+      <div class="tp-footer">
+        <span class="tp-pts">20 points</span>
+        <span class="tp-dur">⏱ 2 hours</span>
+      </div>
+    </div>
+
+    <!-- TP2 MongoDB -->
+    <div class="tp-card" data-tp="2">
+      <div class="tp-header">
+        <div class="tp-icon">🏥</div>
+        <div class="tp-meta">
+          <div class="tp-number">Lab 2 · MongoDB</div>
+          <div class="tp-title">Digital Medical Records</div>
+        </div>
+      </div>
+      <div class="tp-tech">mongo:6.0</div>
+      <p class="tp-usecase">🏥 HealthCare DZ — Replace 12 relational tables with flexible patient document records.</p>
+      <ul class="tp-objectives">
+        <li>Embedding vs Referencing modelling decisions</li>
+        <li>$jsonSchema validation &amp; constraints</li>
+        <li>Advanced queries with projection</li>
+        <li>Medical aggregation pipelines</li>
+        <li>Compound indexes &amp; explain()</li>
+      </ul>
+      <div class="tp-footer">
+        <span class="tp-pts">25 points</span>
+        <span class="tp-dur">⏱ 3 hours</span>
+      </div>
+    </div>
+
+    <!-- TP3 Cassandra -->
+    <div class="tp-card" data-tp="3">
+      <div class="tp-header">
+        <div class="tp-icon">⚙️</div>
+        <div class="tp-meta">
+          <div class="tp-number">Lab 3 · Cassandra</div>
+          <div class="tp-title">IoT Electric Grid Sensors</div>
+        </div>
+      </div>
+      <div class="tp-tech">cassandra:4.1</div>
+      <p class="tp-usecase">⚡ SmartGrid DZ — Ingest 10,000 measurements per minute from sensors monitoring Algeria's power grid.</p>
+      <ul class="tp-objectives">
+        <li>Partition Key &amp; Clustering Key for time series</li>
+        <li>Batch ingestion: 50,000 rows with Python</li>
+        <li>CQL: advanced time-range queries</li>
+        <li>TimeWindowCompactionStrategy (TWCS)</li>
+        <li>Per-row TTL for automatic archiving</li>
+      </ul>
+      <div class="tp-footer">
+        <span class="tp-pts">25 points</span>
+        <span class="tp-dur">⏱ 3 hours</span>
+      </div>
+    </div>
+
+    <!-- TP4 Neo4j -->
+    <div class="tp-card" data-tp="4">
+      <div class="tp-header">
+        <div class="tp-icon">🎓</div>
+        <div class="tp-meta">
+          <div class="tp-number">Lab 4 · Neo4j</div>
+          <div class="tp-title">University Social Network</div>
+        </div>
+      </div>
+      <div class="tp-tech">neo4j:5.13 + GDS</div>
+      <p class="tp-usecase">🎓 UniConnect DZ — Connect students across Algerian universities (USTHB, UMBB, USTO…).</p>
+      <ul class="tp-objectives">
+        <li>Graph model: Student, Course, Club, Skill</li>
+        <li>Cypher: MATCH, MERGE, UNWIND, WITH</li>
+        <li>Shortest path with shortestPath()</li>
+        <li>GDS algorithms: Louvain, PageRank, Centrality</li>
+        <li>Contact recommendations (Jaccard similarity)</li>
+      </ul>
+      <div class="tp-footer">
+        <span class="tp-pts">20 points</span>
+        <span class="tp-dur">⏱ 3 hours</span>
+      </div>
+    </div>
+
+    <!-- TP5 Benchmark -->
+    <div class="tp-card" data-tp="5" style="grid-column: 1 / -1; max-width: 600px;">
+      <div class="tp-header">
+        <div class="tp-icon">📊</div>
+        <div class="tp-meta">
+          <div class="tp-number">Lab 5 · Benchmark</div>
+          <div class="tp-title">Comparative Performance Analysis</div>
+        </div>
+      </div>
+      <div class="tp-tech">Redis + MongoDB + Cassandra</div>
+      <p class="tp-usecase">📊 Produce a decision-support report: which database should you choose for which workload?</p>
+      <ul class="tp-objectives">
+        <li>Write benchmark: 100,000 records × 3 databases</li>
+        <li>Read latencies P50, P95, P99</li>
+        <li>Load test: 50 concurrent clients</li>
+        <li>Argued recommendation table</li>
+      </ul>
+      <div class="tp-footer">
+        <span class="tp-pts">10 points</span>
+        <span class="tp-dur">⏱ 2 hours</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── THEORY ─────────────────────────────────────────────── -->
+<section id="theorie">
+  <div class="section-label">Theory Review</div>
+  <h2 class="section-title">The 4 NoSQL Families</h2>
+  <p class="section-desc">
+    Each family solves a problem that relational databases handle poorly. The right choice depends on your data structure and your target query patterns.
+  </p>
+
+  <div class="theory-grid">
+    <div class="theory-card" style="border-top: 2px solid var(--redis);">
+      <h3 style="color: var(--redis);">⚡ Key-Value</h3>
+      <p>The simplest structure. O(1) access by key. Ideal for caching, sessions, counters and leaderboards. Redis adds rich data structures: Hash, List, Set, Sorted Set.</p>
+    </div>
+    <div class="theory-card" style="border-top: 2px solid var(--mongo);">
+      <h3 style="color: var(--mongo);">🏥 Document</h3>
+      <p>Data stored as flexible JSON documents. No rigid schema. Perfect for complex entities with variable attributes (medical records, user profiles, product catalogs).</p>
+    </div>
+    <div class="theory-card" style="border-top: 2px solid var(--cassandra);">
+      <h3 style="color: var(--cassandra);">⚙️ Column-Family</h3>
+      <p>Organized by columns rather than rows. Massively parallel writes with no contention point. The golden rule: model tables around queries, not entities.</p>
+    </div>
+    <div class="theory-card" style="border-top: 2px solid var(--neo4j);">
+      <h3 style="color: var(--neo4j);">🎓 Graph</h3>
+      <p>Relationships are first-class citizens. Multi-hop traversals (friends of friends, shortest path) are native and efficient — where SQL would require recursive JOINs.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 3rem;">
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text);">Cache-Aside Pattern in practice (Lab 1)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-dot r"></span>
+        <span class="code-dot y"></span>
+        <span class="code-dot g"></span>
+        <span class="code-label">Python · ex3_cache.py</span>
+      </div>
+      <pre><span class="kw">def</span> <span class="fn">get_product_cached</span>(r, product_id, ttl=<span class="num">600</span>):
+    cache_key = <span class="str">f"product_cache:{product_id}"</span>
+    cached = r.get(cache_key)
+
+    <span class="kw">if</span> cached:  <span class="cm"># Cache HIT → instant return (&lt;1ms)</span>
+        <span class="kw">return</span> json.loads(cached)
+
+    <span class="cm"># Cache MISS → slow DB query (2s)</span>
+    product = slow_db_get_product(product_id)
+
+    <span class="kw">if</span> product:  <span class="cm"># Store in Redis with TTL</span>
+        r.setex(cache_key, ttl, json.dumps(product))
+
+    <span class="kw">return</span> product</pre>
+    </div>
+  </div>
+
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text);">MongoDB Aggregation Pipeline (Lab 2)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-dot r"></span>
+        <span class="code-dot y"></span>
+        <span class="code-dot g"></span>
+        <span class="code-label">MongoDB · ex3_aggregation.js</span>
+      </div>
+      <pre>db.patients.aggregate([
+  { <span class="var">$unwind</span>: <span class="str">"$consultations"</span> },
+  { <span class="var">$match</span>: { <span class="str">"address.city"</span>: <span class="str">"Algiers"</span> } },
+  { <span class="var">$group</span>: {
+      _id: <span class="str">"$consultations.diagnosis"</span>,
+      count: { <span class="var">$sum</span>: <span class="num">1</span> },
+      doctors: { <span class="var">$addToSet</span>: <span class="str">"$consultations.doctor.name"</span> }
+  }},
+  { <span class="var">$sort</span>: { count: <span class="num">-1</span> } },
+  { <span class="var">$limit</span>: <span class="num">10</span> }
+])</pre>
+    </div>
+  </div>
+
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text);">Neo4j Cypher Query (Lab 4)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-dot r"></span>
+        <span class="code-dot y"></span>
+        <span class="code-dot g"></span>
+        <span class="code-label">Cypher · ex3_graph_algorithms.cypher</span>
+      </div>
+      <pre><span class="cm">// Shortest path between two students</span>
+<span class="kw">MATCH</span> p = shortestPath(
+  (a:Student {name: <span class="str">"Ahmed"</span>})-[:KNOWS*..10]-(b:Student {name: <span class="str">"Yasmina"</span>})
+)
+<span class="kw">RETURN</span> [n <span class="kw">IN</span> nodes(p) | n.name + <span class="str">" ("</span> + n.university + <span class="str">")"</span>] <span class="kw">AS</span> path,
+       length(p) <span class="kw">AS</span> hops</pre>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── COMPARISON ─────────────────────────────────────────── -->
+<section id="comparaison">
+  <div class="section-label">Decision Guide</div>
+  <h2 class="section-title">Which Database Should You Choose?</h2>
+  <p class="section-desc">
+    The choice of a NoSQL database depends on data access patterns, not on technology popularity.
+  </p>
+
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Technology</th>
+        <th>Model</th>
+        <th>Strength</th>
+        <th>Ideal Use Case</th>
+        <th>Avoid When…</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-redis">Redis</span></td>
+        <td>Key-Value</td>
+        <td>Sub-millisecond latency, rich in-memory structures</td>
+        <td>Cache, sessions, leaderboards, rate limiting</td>
+        <td>Large volumes of persistent data</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-mongo">MongoDB</span></td>
+        <td>Document</td>
+        <td>Flexible schema, powerful aggregation</td>
+        <td>Profiles, catalogs, complex records</td>
+        <td>Critical multi-collection transactions</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-cass">Cassandra</span></td>
+        <td>Column-Family</td>
+        <td>Massively scalable writes, no SPOF</td>
+        <td>IoT, logs, time series, analytics</td>
+        <td>Ad-hoc queries (ALLOW FILTERING)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-neo4j">Neo4j</span></td>
+        <td>Graph</td>
+        <td>Native multi-hop traversals</td>
+        <td>Social networks, recommendations, fraud</td>
+        <td>Tabular data with no complex relationships</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FAQ ─────────────────────────────────────────────────── -->
+<section id="faq">
+  <div class="section-label">Frequently Asked Questions</div>
+  <h2 class="section-title">Lab FAQ</h2>
+  <p class="section-desc">The most common questions about the labs and their theoretical background.</p>
+
+  <div class="accordion">
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>💡</span>
+        Why does Redis use Sorted Sets for leaderboards?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>A Redis Sorted Set automatically keeps elements sorted by score. Incrementing a product's score (ZINCRBY) and retrieving the top 10 (ZREVRANGE) are both O(log N) operations. Doing the same in SQL would require a table, an index, a COUNT, and an ORDER BY — far more expensive on writes.</p>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>📄</span>
+        Embedding vs Referencing in MongoDB — how do you decide?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>The general rule:</p>
+        <ul>
+          <li><strong>Embedding</strong> when data is always accessed together, the sub-document has a bounded size (no unbounded growth), and atomicity is required.</li>
+          <li><strong>Referencing</strong> when the sub-document can grow indefinitely (e.g. all orders for a customer), data is accessed independently, or it is shared across multiple parent documents.</li>
+        </ul>
+        <p style="margin-top: 8px;">In HealthCare DZ: recent consultations are embedded (frequent access), but lab analyses are referenced (potentially unlimited volume).</p>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>⚙️</span>
+        Why is ALLOW FILTERING dangerous in Cassandra?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>ALLOW FILTERING forces Cassandra to scan ALL partitions in the cluster to find matching rows — it is a distributed full table scan. Over 10 million rows spread across 10 nodes, it reads 100% of the data to perhaps return 10 rows. In production, this saturates nodes and degrades performance for all concurrent queries.</p>
+        <p style="margin-top: 8px;">The solution: create a dedicated table for each frequent query, with the correct Partition Key.</p>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>🎓</span>
+        Why is Neo4j better than SQL for graph queries?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>In SQL, finding "friends of friends" requires 2 JOINs on the same table. For "friends within 6 degrees", that's 6 recursive JOINs — the execution plan grows exponentially. Neo4j stores relationships as direct pointers: traversing a million relationships is as fast as traversing ten. Neo4j's shortestPath() uses an optimised BFS that only visits the necessary nodes.</p>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>🔥</span>
+        What is a "hot partition" in Cassandra?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>A hot partition receives far more traffic than others. If you choose only "city" as the Partition Key, the node hosting the "Algiers" partition handles 3× more traffic than "Tamanrasset". That node becomes a bottleneck and negates the benefit of horizontal distribution.</p>
+        <p style="margin-top: 8px;">Solution in SmartGrid DZ: use (sensor_id, date) as the Partition Key — data is distributed evenly across all nodes.</p>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <button class="accordion-trigger" onclick="toggle(this)">
+        <span>📊</span>
+        How do I interpret the Lab 5 benchmark results?
+        <span class="chevron">▾</span>
+      </button>
+      <div class="accordion-body">
+        <p>Key metrics to understand:</p>
+        <ul>
+          <li><strong>P50 (median)</strong>: typical latency of a normal request</li>
+          <li><strong>P95</strong>: 95% of requests are faster than this value</li>
+          <li><strong>P99</strong>: the experience of your unluckiest users</li>
+          <li><strong>Throughput (req/s)</strong>: maximum capacity under load</li>
+        </ul>
+        <p style="margin-top: 8px;">A P99 of 500ms while P50 is 5ms indicates tail latencies — often caused by GC pauses, compaction, or hot spots. This is what you will analyse in your REPORT.md.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── GETTING STARTED ────────────────────────────────────── -->
+<section id="demarrage">
+  <div class="section-label">Getting Started</div>
+  <h2 class="section-title">Up and Running in 4 Steps</h2>
+  <p class="section-desc">
+    The entire environment is containerised. Nothing needs to be installed manually.
+  </p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Accept the GitHub Classroom assignment</h3>
+        <p>Click the link provided by your instructor. GitHub Classroom automatically creates your personal repository with the starter code.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Clone and launch the environment</h3>
+        <div class="code-block" style="margin-top: 0.75rem;">
+          <div class="code-header">
+            <span class="code-dot r"></span><span class="code-dot y"></span><span class="code-dot g"></span>
+            <span class="code-label">bash</span>
+          </div>
+          <pre>git clone https://github.com/YOUR_ORG/YOUR_REPO.git
+cd nosql-tp-chapter4
+docker compose up -d
+docker compose ps  <span class="cm"># Verify all services are "Up"</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Verify connections</h3>
+        <p>Redis UI → <strong>localhost:8001</strong> · MongoDB UI → <strong>localhost:8081</strong> · Neo4j Browser → <strong>localhost:7474</strong> · Cassandra via cqlsh inside the container.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Start with Lab 1 and run the tests</h3>
+        <div class="code-block" style="margin-top: 0.75rem;">
+          <div class="code-header">
+            <span class="code-dot r"></span><span class="code-dot y"></span><span class="code-dot g"></span>
+            <span class="code-label">bash</span>
+          </div>
+          <pre>cd TP1_KeyValue/starter
+pip install redis pytest
+<span class="cm"># Implement ex1_structures.py</span>
+pytest tests/test_ex1.py -v</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 3rem; background: rgba(80,70,212,0.06); border: 1px solid rgba(80,70,212,0.18); border-radius: 12px; padding: 1.5rem;">
+    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #5046d4;">📋 Deliverables reminder</h3>
+    <p style="font-size: 0.875rem; color: var(--muted); line-height: 1.7;">
+      For each lab, you must submit: completed code inside <code style="background: rgba(80,70,212,0.08); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 12px;">starter/</code>, a <code style="background: rgba(80,70,212,0.08); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 12px;">REPORT.md</code> file with your analysis, and regular commits with meaningful messages. Automated tests run on every push via GitHub Actions.
+    </p>
+  </div>
+</section>
+
+<!-- ── FOOTER ──────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <p style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem;">
+      Chapter 4 — NoSQL Databases
+    </p>
+    <p>Module <strong>Advanced Databases</strong> · Master / Bachelor 3 · GitHub Classroom</p>
+    <p style="margin-top: 1rem;">Redis · MongoDB · Cassandra · Neo4j</p>
+  </div>
+</footer>
+
+<script>
+function toggle(btn) {
+  btn.classList.toggle('open');
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+}
+</script>
+</body>
+</html>

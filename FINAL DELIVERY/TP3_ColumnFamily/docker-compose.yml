@@ -1,0 +1,105 @@
+version: '3.9'
+
+services:
+  # ─── Redis (TP1) ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: nosql_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./TP1_KeyValue/starter/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - nosql_net
+
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: nosql_redis_ui
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+    networks:
+      - nosql_net
+
+  # ─── MongoDB (TP2) ───────────────────────────────────────────
+  mongodb:
+    image: mongo:6.0
+    container_name: nosql_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: medical_db
+    volumes:
+      - mongo_data:/data/db
+      - ./TP2_Document/starter/init-mongo.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - nosql_net
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: nosql_mongo_ui
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
+    depends_on:
+      - mongodb
+    networks:
+      - nosql_net
+
+  # ─── Cassandra (TP3) ─────────────────────────────────────────
+  cassandra:
+    image: cassandra:4.1
+    container_name: nosql_cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: IoTCluster
+      CASSANDRA_DC: datacenter1
+      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 512M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - nosql_net
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Neo4j (TP4) ─────────────────────────────────────────────
+  neo4j:
+    image: neo4j:5.13
+    container_name: nosql_neo4j
+    ports:
+      - "7474:7474"   # HTTP Browser
+      - "7687:7687"   # Bolt protocol
+    environment:
+      NEO4J_AUTH: neo4j/password123
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ./TP4_Graph/starter/import:/var/lib/neo4j/import
+    networks:
+      - nosql_net
+
+volumes:
+  redis_data:
+  mongo_data:
+  cassandra_data:
+  neo4j_data:
+  neo4j_logs:
+
+networks:
+  nosql_net:
+    driver: bridge
